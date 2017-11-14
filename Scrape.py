@@ -4,40 +4,52 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait as WDW
 import urllib.request as urllib
 from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.common.action_chains import ActionChains
 import os
 import time
+import timeit
 
 
 #Names files 0.png, 1.png, ...
-def download_images(imgs:[], path:str):
+def download_images(imgs: [], path: str):
     c = 0
     for i in imgs:
         urllib.urlretrieve(i, os.path.join(path, str(c) + '.png'))
         c = c+1
     urllib.urlcleanup()
 
+
 #Converts a list containing elements to a list containing the elements' specified attribute
-def to_attribute_list(elements:[], attribute:str):
+def to_attribute_list(elements: [], attribute: str):
     attributes = []
     for i in elements:
         attributes.append(i.get_attribute(attribute))
 
     return attributes
 
+
 #Names directories 0, 1, 2, ...
-def create_directory():
-    num = 0
+def create_directory(num=0):
     while os.path.exists('./' + str(num)):
         num = num + 1
     os.makedirs('./' + str(num))
 
-    return ('./' + str(num))
+    return './' + str(num)
 
 
 def main():
 
+    START = 'http://kissmanga.com/Manga/Superior-Cross'
+    ALLDROPDOWN = '//*[@id="selectReadType"]/option[2]'
+    ACTUALIMAGES = '//*[@id="divImage"]//img'
+    IMGGROUPS = '.listing a'
+
     wdo = webdriver.ChromeOptions()
     wdo.add_extension('C:\Webdrivers\extension_1_14_18.crx')
+    #wdo.add_argument('--headless')
+    #wdo.add_argument('--disable-gpu')
+
     capa = DC.CHROME
     capa["pageLoadStrategy"] = "none"
 
@@ -47,38 +59,41 @@ def main():
     wd = webdriver.Chrome(chrome_options=wdo)
     wait = WDW(wd, 20)
 
-    wd.get("http://kissmanga.com/Manga/Superior-Cross")
+    start = timeit.default_timer()
+
+    wd.get(START)
     time.sleep(6) #wait a moment for javascript to give us access to website
 
-    groups = wd.find_elements_by_css_selector('.listing a')
+    groups = wd.find_elements_by_css_selector(IMGGROUPS)
 
     # BEGIN THREAD
-    groups.pop().click() #navigate to a group of pages with images
 
-    ALLIMAGES = '//*[@id="selectReadType"]/option[2]'
-    ACTUALIMAGES = '//*[@id="divImage"]//img'
+    groups = to_attribute_list(groups, 'href')
 
 
-    wait.until(EC.presence_of_element_located((By.XPATH, ALLIMAGES))) #click ASAP
-    wd.find_element_by_xpath(ALLIMAGES).click() #click the ALL images selection
+    for g in reversed(groups):
+        wd.execute_script('''window.open("''' + g + '''","_blank");''')
+        time.sleep(1)
+        wd.switch_to.window(wd.window_handles[1])
 
-    time.sleep(2)#wait a moment for javascript to load
+        wait.until(EC.presence_of_element_located((By.XPATH, ALLDROPDOWN))) #click ASAP
+        wd.find_element_by_xpath(ALLDROPDOWN).click() #click the ALL images selection
+        time.sleep(4)
+        wait.until(EC.presence_of_all_elements_located((By.XPATH, ACTUALIMAGES))) #find all ASAP
+        imgs = wd.find_elements_by_xpath(ACTUALIMAGES)  # find all of the images we want
 
-    wait.until(EC.presence_of_all_elements_located((By.XPATH, ACTUALIMAGES))) #find all ASAP
-    imgs = wd.find_elements_by_xpath(ACTUALIMAGES)  # find all of the images we want
+        wd.execute_script("window.stop();") #stop loading the page
 
-    wd.execute_script("window.stop();") #stop loading the page
+        #download_images(to_attribute_list(imgs, 'src'), create_directory())
 
-    download_images(to_attribute_list(imgs, 'src'), create_directory())
+        #Close tab
+        wd.execute_script('''window.close();''')
+        wd.switch_to.window(wd.window_handles[0])
+        #body = wd.find_element(By.TAG_NAME, 'body')
+        #body.send_keys(Keys.CONTROL, 'w')
 
     wd.quit() #Unfortunately this has to remain open for the session to work
 
-    #if wd.find_element_by_xpath('//*[@id="containerRoot"]/div[4]/div[1]/div[2]/a/img').is_displayed():
-        #wd.find_element_by_xpath('//*[@id="containerRoot"]/div[4]/div[1]/div[2]/a/img').click()
-
-
-    #wd.find_element_by_xpath('//*[@id="selectReadType"]/option[2]').click()
-    #img = wd.find_elements_by_xpath('//*[@id="divImage"]//img')
-
+    print(timeit.default_timer() - start)#12
 
 main()
