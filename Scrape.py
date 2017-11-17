@@ -5,84 +5,102 @@ from selenium.webdriver.support.ui import WebDriverWait as WDW
 import urllib.request as urllib
 from selenium.webdriver.common.by import By
 import os
-import time
 
 
-#Names files 0.png, 1.png, ...
-def download_images(imgs: [], path: str):
-    c = 0
+# Names files 0.png, 1.png, ...
+def download_images(imgs: [], path: str, c=0):
+
     for i in imgs:
         urllib.urlretrieve(i, os.path.join(path, str(c) + '.png'))
         c = c+1
+
     urllib.urlcleanup()
 
 
-#Converts a list containing elements to a list containing the elements' specified attribute
-def to_attribute_list(elements: [], attribute: str):
+# Converts a list containing elements to a list containing the elements' specified attribute
+def to_attribute_list(elements: [], attribute: str) -> list():
+
     attributes = []
+
     for i in elements:
         attributes.append(i.get_attribute(attribute))
 
     return attributes
 
 
-#Names directories 0, 1, 2, ...
-def create_directory(num=0):
-    while os.path.exists('./' + str(num)):
-        num = num + 1
-    os.makedirs('./' + str(num))
+# Names directories 0, 1, 2, ... inside of a named directory if given or current directory by default
+def create_directory(num=0, curdir='./') -> str:
 
-    return './' + str(num)
+    joined = os.path.join(curdir, str(num))
+
+    if not os.path.exists(curdir):
+        os.makedirs(curdir)
+
+    while os.path.exists(joined):
+        num = num + 1
+        joined = os.path.join(curdir, str(num))
+
+    os.makedirs(joined)
+
+    return joined
 
 
 def main():
 
-    START = 'http://kissmanga.com/Manga/Superior-Cross'
+    # Constants
+    START = 'http://kissmanga.com/Manga/Spirit-Migration'
     ALLDROPDOWN = '//*[@id="selectReadType"]/option[2]'
     ACTUALIMAGES = '//*[@id="divImage"]//img'
     IMGGROUPS = '.listing a'
+    TITLE = '.bigChar'
 
     wdo = webdriver.ChromeOptions()
-    #wdo.add_extension('C:\Webdrivers\extension_1_14_18.crx')
     wdo.add_argument('--headless')
     wdo.add_argument('--disable-gpu')
+
+    # Add ad blocker extension
+    # https://clients2.google.com/service/update2/crx?response=redirect&prodversion=60&x=id%3Dcjpalhdlnbpafiamejdnhcphjbkeiagm%26uc
+    # wdo.add_extension('C:\Webdrivers\extension_1_14_18.crx')
+
+    # Remove all images option
+    # prefs = {"profile.managed_default_content_settings.images": 2}
+    # wdo.add_experimental_option("prefs", prefs)
 
     capa = DC.CHROME
     capa["pageLoadStrategy"] = "none"
 
-    #prefs = {"profile.managed_default_content_settings.images": 2}
-    #wdo.add_experimental_option("prefs", prefs)
-    #https://clients2.google.com/service/update2/crx?response=redirect&prodversion=60&x=id%3Dcjpalhdlnbpafiamejdnhcphjbkeiagm%26uc
-
     wd = webdriver.Chrome(chrome_options=wdo)
-    wait = WDW(wd, 20)
+    wait = WDW(wd, 10)
 
     wd.get(START)
-    time.sleep(6) #wait a moment for javascript to give us access to website
+    wait.until(EC.title_contains('manga'))  # wait a moment for the page to load
+
+    title = wd.find_element_by_css_selector(TITLE).text
 
     groups = wd.find_elements_by_css_selector(IMGGROUPS)
     groups = to_attribute_list(groups, 'href')
 
     for g in reversed(groups):
-        wd.execute_script('''window.open("''' + g + '''","_blank");''')
-        time.sleep(2)
+        wd.execute_script('''window.open("''' + g + '''","_blank");''')  # open a blank tab
+        wait.until(EC.number_of_windows_to_be(2))
         wd.switch_to.window(wd.window_handles[1])
 
-        wait.until(EC.presence_of_element_located((By.XPATH, ALLDROPDOWN))) #click ASAP
-        wd.find_element_by_xpath(ALLDROPDOWN).click() #click the ALL images selection
+        wait.until(EC.presence_of_element_located((By.XPATH, ALLDROPDOWN)))
+        wd.find_element_by_xpath(ALLDROPDOWN).click()
 
-        wait.until(EC.presence_of_all_elements_located((By.XPATH, ACTUALIMAGES))) #find all ASAP
-        imgs = wd.find_elements_by_xpath(ACTUALIMAGES)  # find all of the images we want
+        wait.until_not(EC.presence_of_element_located((By.CSS_SELECTOR, '#selectPage')))  # wait for javascript
 
-        wd.execute_script("window.stop();") #stop loading the page
+        wait.until(EC.presence_of_all_elements_located((By.XPATH, ACTUALIMAGES)))
+        imgs = wd.find_elements_by_xpath(ACTUALIMAGES)
 
-        download_images(to_attribute_list(imgs, 'src'), create_directory())
+        wd.execute_script("window.stop();")  # stop loading the page
 
-        #Close tab
+        download_images(to_attribute_list(imgs, 'src'), create_directory(curdir=title))
+
         wd.execute_script('''window.close();''')
         wd.switch_to.window(wd.window_handles[0])
 
-    wd.quit() #Unfortunately this has to remain open for the session to work
+    wd.quit()
 
 
 main()
