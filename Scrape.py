@@ -4,7 +4,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait as WDW
 import urllib.request as urllib
 from selenium.webdriver.common.by import By
-import os
+import os, sys
 
 
 # Names files 0.png, 1.png, ...
@@ -46,9 +46,13 @@ def create_directory(num=0, curdir='./') -> str:
 
 
 def main():
+    try:
+        start = sys.argv[1]
+    except:
+        print('ERROR: Requires URL as the first argument.')
+        quit(0)
 
     # Constants
-    START = 'http://kissmanga.com/Manga/Spirit-Migration'
     ALLDROPDOWN = '//*[@id="selectReadType"]/option[2]'
     ACTUALIMAGES = '//*[@id="divImage"]//img'
     IMGGROUPS = '.listing a'
@@ -70,11 +74,12 @@ def main():
     capa["pageLoadStrategy"] = "none"
 
     wd = webdriver.Chrome(chrome_options=wdo)
-    wait = WDW(wd, 10)
+    wait = WDW(wd, 20)
 
-    wd.get(START)
-    wait.until(EC.title_contains('manga'))  # wait a moment for the page to load
+    wd.get(start)
+    wait.until(EC.title_contains('manga'))  # wait a moment for javascript to process
 
+    wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, TITLE)))
     title = wd.find_element_by_css_selector(TITLE).text
 
     groups = wd.find_elements_by_css_selector(IMGGROUPS)
@@ -99,6 +104,8 @@ def main():
 
         wd.execute_script('''window.close();''')
         wd.switch_to.window(wd.window_handles[0])
+
+        print(str(groups.index(g)) + ' remaining out of ' + str(len(groups)))
 
     wd.quit()
 
