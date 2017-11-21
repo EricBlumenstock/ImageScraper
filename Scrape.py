@@ -86,7 +86,7 @@ def main():
     groups = to_attribute_list(groups, 'href')
 
     for g in reversed(groups):
-        wd.execute_script('''window.open("''' + g + '''","_blank");''')  # open a blank tab
+        wd.execute_script('''window.open("''' + g + '''","_blank");''')  # open a new tab
         wait.until(EC.number_of_windows_to_be(2))
         wd.switch_to.window(wd.window_handles[1])
 
