@@ -7,7 +7,7 @@ from selenium.webdriver.common.by import By
 import os, sys
 
 
-# Names files 0.png, 1.png, ...
+"""Names files 0.png, 1.png, ..."""
 def download_images(imgs: [], path: str, c=0):
 
     for i in imgs:
@@ -17,7 +17,7 @@ def download_images(imgs: [], path: str, c=0):
     urllib.urlcleanup()
 
 
-# Converts a list containing elements to a list containing the elements' specified attribute
+"""Converts a list containing elements to a list containing the elements' specified attribute"""
 def to_attribute_list(elements: [], attribute: str) -> list():
 
     attributes = []
@@ -28,7 +28,7 @@ def to_attribute_list(elements: [], attribute: str) -> list():
     return attributes
 
 
-# Names directories 0, 1, 2, ... inside of a named directory if given or current directory by default
+"""Names directories 0, 1, 2, ... inside of a named directory if given or current directory by default"""
 def create_directory(num=0, curdir='./') -> str:
 
     joined = os.path.join(curdir, str(num))
@@ -46,10 +46,11 @@ def create_directory(num=0, curdir='./') -> str:
 
 
 def main():
+    start=''
     try:
         start = sys.argv[1]
     except:
-        print('ERROR: Requires URL as the first argument.')
+        print('ERROR: Requires URL as the first argument.', file=sys.stderr)
         quit(0)
 
     # Constants
@@ -62,16 +63,7 @@ def main():
     wdo.add_argument('--headless')
     wdo.add_argument('--disable-gpu')
 
-    # Add ad blocker extension
-    # https://clients2.google.com/service/update2/crx?response=redirect&prodversion=60&x=id%3Dcjpalhdlnbpafiamejdnhcphjbkeiagm%26uc
-    # wdo.add_extension('C:\Webdrivers\extension_1_14_18.crx')
-
-    # Remove all images option
-    # prefs = {"profile.managed_default_content_settings.images": 2}
-    # wdo.add_experimental_option("prefs", prefs)
-
-    capa = DC.CHROME
-    capa["pageLoadStrategy"] = "none"
+    # wdo.add_extension('C:\Webdrivers\extension_1_14_22.crx')
 
     wd = webdriver.Chrome(chrome_options=wdo)
     wait = WDW(wd, 20)
@@ -82,6 +74,7 @@ def main():
     wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, TITLE)))
     title = wd.find_element_by_css_selector(TITLE).text
 
+    wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, IMGGROUPS)))
     groups = wd.find_elements_by_css_selector(IMGGROUPS)
     groups = to_attribute_list(groups, 'href')
 
@@ -100,7 +93,7 @@ def main():
 
         wd.execute_script("window.stop();")  # stop loading the page
 
-        download_images(to_attribute_list(imgs, 'src'), create_directory(curdir=title))
+        download_images(to_attribute_list(imgs, 'src'), create_directory(curdir=title[0:30]))
 
         wd.execute_script('''window.close();''')
         wd.switch_to.window(wd.window_handles[0])
