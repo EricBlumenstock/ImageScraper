@@ -40,6 +40,7 @@ def create_directory(num=0, curdir='./') -> str:
     if not os.path.exists(curdir):
         os.makedirs(curdir)
 
+    # TODO: Add chapter names
     while os.path.exists(joined):
         num = num + 1
         joined = os.path.join(curdir, str(num))
@@ -67,11 +68,12 @@ def main():
     wdo = webdriver.ChromeOptions()
     wdo.add_argument('--headless')
     wdo.add_argument('--disable-gpu')
+    wdo.add_argument('log-level=2')
     # wdo.add_extension('C:/Webdrivers/extension_1_14_22.crx')
 
     wd = webdriver.Chrome(chrome_options=wdo, desired_capabilities={'pageLoadStrategy':'none'})
 
-    wait = WDW(wd, 5)
+    wait = WDW(wd, 10)
 
     wd.get(start)
     wait.until(EC.title_contains('manga'))  # wait a moment for javascript to process
