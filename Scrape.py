@@ -1,6 +1,7 @@
 import selenium.webdriver as webdriver
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities as DC
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait as WDW
 import urllib.request as urllib
 from selenium.webdriver.common.by import By
@@ -31,6 +32,9 @@ def to_attribute_list(elements: [], attribute: str) -> list():
 """Names directories 0, 1, 2, ... inside of a named directory if given or current directory by default"""
 def create_directory(num=0, curdir='./') -> str:
 
+    temp = "".join(i for i in curdir if i not in r"""<>:"/\|?*""")  # strip invalid characters
+    curdir = temp
+
     joined = os.path.join(curdir, str(num))
 
     if not os.path.exists(curdir):
@@ -58,15 +62,16 @@ def main():
     ACTUALIMAGES = '//*[@id="divImage"]//img'
     IMGGROUPS = '.listing a'
     TITLE = '.bigChar'
+    PAGEDROPDOWN = '#selectPage'
 
     wdo = webdriver.ChromeOptions()
     wdo.add_argument('--headless')
     wdo.add_argument('--disable-gpu')
+    # wdo.add_extension('C:/Webdrivers/extension_1_14_22.crx')
 
-    # wdo.add_extension('C:\Webdrivers\extension_1_14_22.crx')
+    wd = webdriver.Chrome(chrome_options=wdo, desired_capabilities={'pageLoadStrategy':'none'})
 
-    wd = webdriver.Chrome(chrome_options=wdo)
-    wait = WDW(wd, 20)
+    wait = WDW(wd, 5)
 
     wd.get(start)
     wait.until(EC.title_contains('manga'))  # wait a moment for javascript to process
@@ -85,22 +90,20 @@ def main():
 
         wait.until(EC.presence_of_element_located((By.XPATH, ALLDROPDOWN)))
         wd.find_element_by_xpath(ALLDROPDOWN).click()
-
-        wait.until_not(EC.presence_of_element_located((By.CSS_SELECTOR, '#selectPage')))  # wait for javascript
+        wait.until_not(EC.presence_of_element_located((By.CSS_SELECTOR, PAGEDROPDOWN)))  # wait for javascript
 
         wait.until(EC.presence_of_all_elements_located((By.XPATH, ACTUALIMAGES)))
         imgs = wd.find_elements_by_xpath(ACTUALIMAGES)
 
         wd.execute_script("window.stop();")  # stop loading the page
 
-        download_images(to_attribute_list(imgs, 'src'), create_directory(curdir=title[0:30]))
+        download_images(to_attribute_list(imgs, 'src'), create_directory(curdir=title[:25]))
 
         wd.execute_script('''window.close();''')
         wd.switch_to.window(wd.window_handles[0])
 
         print(str(groups.index(g)) + ' remaining out of ' + str(len(groups)))
 
-    wd.quit()
 
 
 main()
