@@ -62,6 +62,7 @@ def main():
     wdo.add_argument('log-level=2')
     # wdo.add_extension('C:/Webdrivers/extension_1_14_22.crx')
 
+    # TODO: Create 'with' keyword webdriver __enter__ __exit__
     wd = webdriver.Chrome(chrome_options=wdo, desired_capabilities={'pageLoadStrategy':'none'})
 
     wait = WDW(wd, 10)
