@@ -9,11 +9,11 @@ import os, sys
 
 
 """Names files 0.png, 1.png, ..."""
-def download_images(imgs: [], path: str, c=0):
+def download_images(imgs: [], path: str, volume=1, name=1):
 
     for i in imgs:
-        urllib.urlretrieve(i, os.path.join(path, str(c) + '.png'))
-        c = c+1
+        urllib.urlretrieve(i, os.path.join(path, str(volume) + '-' + str(name) + '.png'))
+        name = name + 1
 
     urllib.urlcleanup()
 
@@ -30,24 +30,14 @@ def to_attribute_list(elements: [], attribute: str) -> list():
 
 
 """Names directories 0, 1, 2, ... inside of a named directory if given or current directory by default"""
-def create_directory(num=0, curdir='./') -> str:
+def create_directory(num=0, dirname='./') -> str:
 
-    temp = "".join(i for i in curdir if i not in r"""<>:"/\|?*""")  # strip invalid characters
-    curdir = temp
+    temp = "".join(i for i in dirname if i not in r"""<>:"/\|?*""")  # strip invalid characters
 
-    joined = os.path.join(curdir, str(num))
+    if not os.path.exists(temp):
+        os.makedirs(temp)
 
-    if not os.path.exists(curdir):
-        os.makedirs(curdir)
-
-    # TODO: Add chapter names
-    while os.path.exists(joined):
-        num = num + 1
-        joined = os.path.join(curdir, str(num))
-
-    os.makedirs(joined)
-
-    return joined
+    return temp
 
 
 def main():
@@ -81,11 +71,15 @@ def main():
     wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, TITLE)))
     title = wd.find_element_by_css_selector(TITLE).text
 
+    workingpath = create_directory(dirname=title[:25])
+
     wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, IMGGROUPS)))
     groups = wd.find_elements_by_css_selector(IMGGROUPS)
-    groups = to_attribute_list(groups, 'href')
 
-    for g in reversed(groups):
+    groups = to_attribute_list(groups, 'href')
+    groups = list(reversed(groups))
+
+    for g in groups:
         wd.execute_script('''window.open("''' + g + '''","_blank");''')  # open a new tab
         wait.until(EC.number_of_windows_to_be(2))
         wd.switch_to.window(wd.window_handles[1])
@@ -99,12 +93,12 @@ def main():
 
         wd.execute_script("window.stop();")  # stop loading the page
 
-        download_images(to_attribute_list(imgs, 'src'), create_directory(curdir=title[:25]))
+        download_images(to_attribute_list(imgs, 'src'), workingpath , volume=groups.index(g)+1)
 
         wd.execute_script('''window.close();''')
         wd.switch_to.window(wd.window_handles[0])
 
-        print(str(groups.index(g)) + ' remaining out of ' + str(len(groups)))
+        print(str(groups.index(g)+1) + ' out of ' + str(len(groups)) + ' completed.')
 
 
 
