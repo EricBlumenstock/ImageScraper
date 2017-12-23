@@ -44,6 +44,7 @@ def main():
     start=''
     try:
         start = sys.argv[1]
+        numbertodownload = int(sys.argv[2])
     except:
         print('ERROR: Requires URL as the first argument.', file=sys.stderr)
         quit(0)
@@ -79,6 +80,9 @@ def main():
     groups = to_attribute_list(groups, 'href')
     groups = list(reversed(groups))
 
+    if numbertodownload:
+        groups = [groups[numbertodownload-1]]
+
     for g in groups:
         wd.execute_script('''window.open("''' + g + '''","_blank");''')  # open a new tab
         wait.until(EC.number_of_windows_to_be(2))
@@ -93,7 +97,7 @@ def main():
 
         wd.execute_script("window.stop();")  # stop loading the page
 
-        download_images(to_attribute_list(imgs, 'src'), workingpath , volume=groups.index(g)+1)
+        download_images(to_attribute_list(imgs, 'src'), workingpath , volume=numbertodownload if numbertodownload else groups.index(g)+1)
 
         wd.execute_script('''window.close();''')
         wd.switch_to.window(wd.window_handles[0])
