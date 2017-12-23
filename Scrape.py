@@ -42,12 +42,15 @@ def create_directory(num=0, dirname='./') -> str:
 
 def main():
     start=''
+    numbertodownload=None
     try:
         start = sys.argv[1]
-        numbertodownload = int(sys.argv[2])
     except:
         print('ERROR: Requires URL as the first argument.', file=sys.stderr)
         quit(0)
+
+    if len(sys.argv)>=3:
+        numbertodownload = int(sys.argv[2])
 
     # Constants
     ALLDROPDOWN = '//*[@id="selectReadType"]/option[2]'
